@@ -96,3 +96,177 @@ CREATE TABLE DUMMY
         (DUMMY NUMBER);
 INSERT INTO DUMMY VALUES (0);
 COMMIT;
+Конечно! Давайте сделаем запросы более компактными и понятными. Вот упрощенные варианты запросов для SQL и Neo4j:
+
+---
+
+### **1. Вывести всех сотрудников**
+#### SQL:
+```sql
+SELECT * FROM emp;
+```
+#### Neo4j:
+```cypher
+MATCH (e:Employee) RETURN e;
+```
+
+---
+
+### **2. Вывести все отделы**
+#### SQL:
+```sql
+SELECT * FROM dept;
+```
+#### Neo4j:
+```cypher
+MATCH (d:Department) RETURN d;
+```
+
+---
+
+### **3. Вывести имена и зарплаты сотрудников**
+#### SQL:
+```sql
+SELECT ename, sal FROM emp;
+```
+#### Neo4j:
+```cypher
+MATCH (e:Employee) RETURN e.ename AS Name, e.sal AS Salary;
+```
+
+---
+
+### **4. Вывести имена сотрудников**
+#### SQL:
+```sql
+SELECT ename FROM emp;
+```
+#### Neo4j:
+```cypher
+MATCH (e:Employee) RETURN e.ename AS Name;
+```
+
+---
+
+### **5. Найти сотрудника с именем "SMITH"**
+#### SQL:
+```sql
+SELECT * FROM emp WHERE ename = 'SMITH';
+```
+#### Neo4j:
+```cypher
+MATCH (e:Employee {ename: 'SMITH'}) RETURN e;
+```
+
+---
+
+### **6. Найти сотрудников с определенными номерами**
+#### SQL:
+```sql
+SELECT * FROM emp WHERE empno IN (7369, 15, 46, 16);
+```
+#### Neo4j:
+```cypher
+MATCH (e:Employee) WHERE e.empno IN [7369, 15, 46, 16] RETURN e;
+```
+
+---
+
+### **7. Сотрудники отдела "ACCOUNTING"**
+#### SQL:
+```sql
+SELECT dept.deptno, emp.empno 
+FROM dept JOIN emp ON dept.deptno = emp.deptno 
+WHERE dname = 'ACCOUNTING';
+```
+#### Neo4j:
+```cypher
+MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) 
+WHERE d.dname = 'ACCOUNTING' 
+RETURN d.deptno, e.empno;
+```
+
+---
+
+### **8. Объединение данных о сотрудниках и отделах**
+#### SQL:
+```sql
+SELECT a.deptno, b.ename FROM dept a, emp b;
+```
+#### Neo4j:
+```cypher
+MATCH (d:Department), (e:Employee) RETURN d.deptno, e.ename;
+```
+
+---
+
+### **9. Уникальные значения департаментов и имен**
+#### SQL:
+```sql
+SELECT DISTINCT deptno, ename FROM emp;
+```
+#### Neo4j:
+```cypher
+MATCH (e:Employee) RETURN DISTINCT e.deptno, e.ename;
+```
+
+---
+
+### **10. Объединение (UNION)**
+#### SQL:
+```sql
+SELECT ename, deptno FROM emp 
+UNION 
+SELECT deptno, dname FROM dept;
+```
+#### Neo4j:
+```cypher
+MATCH (e:Employee) RETURN e.ename AS Name, e.deptno AS DeptNo
+UNION
+MATCH (d:Department) RETURN d.deptno AS Name, d.dname AS DeptNo;
+```
+
+---
+
+### **11. Пересечение (INTERSECT)**
+#### SQL:
+```sql
+SELECT deptno FROM emp 
+INTERSECT 
+SELECT deptno FROM dept;
+```
+#### Neo4j:
+```cypher
+MATCH (e:Employee) RETURN DISTINCT e.deptno AS DeptNo
+INTERSECT
+MATCH (d:Department) RETURN DISTINCT d.deptno AS DeptNo;
+```
+
+---
+
+### **12. Сотрудники с зарплатой > 2500**
+#### SQL:
+```sql
+SELECT * FROM emp WHERE sal > 2500;
+```
+#### Neo4j:
+```cypher
+MATCH (e:Employee) WHERE e.sal > 2500 RETURN e;
+```
+
+---
+
+### **13. Количество сотрудников в каждом отделе**
+#### SQL:
+```sql
+SELECT deptno, COUNT(*) AS count FROM emp GROUP BY deptno;
+```
+#### Neo4j:
+```cypher
+MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) 
+RETURN d.deptno AS DeptNo, COUNT(e) AS Count;
+```
+
+---
+
+Эти запросы короче и легче для восприятия, но сохраняют всю функциональность! Если нужно что-то дополнить или изменить, дайте знать. 😊
