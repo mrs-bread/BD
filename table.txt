@@ -57,3 +57,11 @@ db.courses.insertMany([
 ]);
 
 
+
+db.attendance.aggregate([
+    { $match: { "attended": false } },
+    { $lookup: { from: "students", localField: "student_id", foreignField: "_id", as: "student_info" } },
+    { $unwind: "$student_info" },
+    { $match: { "student_info.name": "Иванов Иван" } },
+    { $project: { "date": 1, "attended": 1, "student_name": "$student_info.name" } }
+]);
