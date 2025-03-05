@@ -1,149 +1,24 @@
-Конечно! Вот все запросы в одном списке, готовые для копирования:
+db.students.insertMany([
+    { "student_id": "S001", "name": "Иванов Иван", "group": "Группа 1" },
+    { "student_id": "S002", "name": "Петров Петр", "group": "Группа 1" },
+    { "student_id": "S003", "name": "Сидоров Алексей", "group": "Группа 2" },
+    { "student_id": "S004", "name": "Кузнецов Дмитрий", "group": "Группа 2" }
+]);
 
----
+db.courses.insertMany([
+    { "course_id": "C001", "name": "Математика", "teacher": "Профессор А." },
+    { "course_id": "C002", "name": "Физика", "teacher": "Профессор Б." },
+    { "course_id": "C003", "name": "Программирование", "teacher": "Профессор В." }
+]);
 
-### SQL → Neo4j Запросы
 
-1. **`SELECT * FROM emp;`**  
-   ```cypher
-   MATCH (a:Employee) RETURN a;
-   ```
+db.attendance.insertMany([
+    { "student_id": "S001", "course_id": "C001", "date": new Date("2023-10-01"), "attended": true },
+    { "student_id": "S001", "course_id": "C001", "date": new Date("2023-10-02"), "attended": false },
+    { "student_id": "S002", "course_id": "C001", "date": new Date("2023-10-01"), "attended": true },
+    { "student_id": "S002", "course_id": "C002", "date": new Date("2023-10-01"), "attended": true },
+    { "student_id": "S003", "course_id": "C003", "date": new Date("2023-10-01"), "attended": false },
+    { "student_id": "S004", "course_id": "C003", "date": new Date("2023-10-01"), "attended": true }
+]);
 
-2. **`SELECT * FROM dept;`**  
-   ```cypher
-   MATCH (a:Department) RETURN a;
-   ```
 
-3. **`SELECT ename, sal FROM emp;`**  
-   ```cypher
-   MATCH (a:Employee) RETURN a.ename AS Name, a.sal AS Salary;
-   ```
-
-4. **`SELECT ename FROM emp;`**  
-   ```cypher
-   MATCH (a:Employee) RETURN a.ename AS Name;
-   ```
-
-5. **`SELECT * FROM emp WHERE ename = 'SMITH';`**  
-   ```cypher
-   MATCH (a:Employee {ename: 'SMITH'}) RETURN a;
-   ```
-
-6. **`SELECT * FROM emp WHERE empno IN (7369, 15, 46, 16);`**  
-   ```cypher
-   MATCH (a:Employee) WHERE a.empno IN [7369, 15, 46, 16] RETURN a;
-   ```
-
-7. **`SELECT dept.deptno, emp.empno FROM dept JOIN emp ON dept.deptno = emp.deptno WHERE dname = 'ACCOUNTING';`**  
-   ```cypher
-   MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) WHERE d.dname = 'ACCOUNTING' RETURN d.deptno AS DepartmentNumber, e.empno AS EmployeeNumber;
-   ```
-
-8. **`SELECT dept.deptno, emp.empno FROM dept JOIN emp ON dept.deptno = emp.deptno WHERE dname = 'WORKS';`**  
-   ```cypher
-   MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) WHERE d.dname = 'WORKS' RETURN d.deptno AS DepartmentNumber, e.empno AS EmployeeNumber;
-   ```
-
-9. **`SELECT * FROM dept JOIN emp ON dept.deptno = emp.deptno WHERE dname = 'ACCOUNTING';`**  
-   ```cypher
-   MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) WHERE d.dname = 'ACCOUNTING' RETURN d, e;
-   ```
-
-10. **`SELECT * FROM dept JOIN emp ON dept.deptno = emp.deptno WHERE dname = 'RESEARCH';`**  
-    ```cypher
-    MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) WHERE d.dname = 'RESEARCH' RETURN d, e;
-    ```
-
-11. **`SELECT * FROM emp JOIN dept ON emp.empno = 7369 AND dept.deptno = 20;`**  
-    ```cypher
-    MATCH (e:Employee)-[:WORKS_IN]->(d:Department) WHERE e.empno = 7369 AND d.deptno = 20 RETURN e, d;
-    ```
-
-12. **`SELECT a.deptno, b.ename FROM dept a, emp b;`**  
-    ```cypher
-    MATCH (d:Department), (e:Employee) RETURN d.deptno AS DepartmentNumber, e.ename AS EmployeeName;
-    ```
-
-13. **`SELECT * FROM dept JOIN emp ON dept.deptno = emp.deptno WHERE emp.ename = 'SMITH';`**  
-    ```cypher
-    MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) WHERE e.ename = 'SMITH' RETURN d, e;
-    ```
-
-14. **`SELECT * FROM EMP WHERE SAL > 2500;`**  
-    ```cypher
-    MATCH (e:Employee) WHERE e.sal > 2500 RETURN e;
-    ```
-
-15. **`SELECT DISTINCT ENAME, DEPTNO FROM EMP;`**  
-    ```cypher
-    MATCH (e:Employee) RETURN DISTINCT e.ename AS Name, e.deptno AS DepartmentNumber;
-    ```
-
-16. **`SELECT DISTINCT DEPTNO FROM EMP;`**  
-    ```cypher
-    MATCH (e:Employee) RETURN DISTINCT e.deptno AS DepartmentNumber;
-    ```
-
-17. **`SELECT * FROM EMP, DEPT;`**  
-    ```cypher
-    MATCH (e:Employee), (d:Department) RETURN e, d;
-    ```
-
-18. **`SELECT DEPTNO, DNAME, LOC FROM DEPT UNION SELECT ENAME, DEPTNO FROM EMP;`**  
-    ```cypher
-    MATCH (d:Department) RETURN d.deptno AS Number, d.dname AS Name, d.loc AS Location
-    UNION
-    MATCH (e:Employee) RETURN e.deptno AS Number, e.ename AS Name, null AS Location;
-    ```
-
-19. **`SELECT DEPTNO FROM EMP UNION SELECT DEPTNO FROM DEPT;`**  
-    ```cypher
-    MATCH (e:Employee) RETURN DISTINCT e.deptno AS DepartmentNumber
-    UNION
-    MATCH (d:Department) RETURN DISTINCT d.deptno AS DepartmentNumber;
-    ```
-
-20. **`SELECT DEPTNO FROM EMP INTERSECT SELECT DEPTNO FROM DEPT;`**  
-    ```cypher
-    MATCH (e:Employee) RETURN DISTINCT e.deptno AS DepartmentNumber
-    INTERSECT
-    MATCH (d:Department) RETURN DISTINCT d.deptno AS DepartmentNumber;
-    ```
-
-21. **`SELECT * FROM DEPT, EMP WHERE SAL > 3000;`**  
-    ```cypher
-    MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) WHERE e.sal > 3000 RETURN d, e;
-    ```
-
----
-
-### Дополнительные 5 запросов
-
-22. **Вывести всех сотрудников, чья зарплата больше `3000`:**  
-    ```cypher
-    MATCH (e:Employee) WHERE e.sal > 3000 RETURN e;
-    ```
-
-23. **Вывести уникальные значения департаментов (`deptno`):**  
-    ```cypher
-    MATCH (e:Employee) RETURN DISTINCT e.deptno AS DepartmentNumber;
-    ```
-
-24. **Вывести сотрудников, которые работают в отделе `'SALES'`:**  
-    ```cypher
-    MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) WHERE d.dname = 'SALES' RETURN e;
-    ```
-
-25. **Вывести количество сотрудников в каждом отделе:**  
-    ```cypher
-    MATCH (d:Department)-[:HAS_EMPLOYEE]->(e:Employee) RETURN d.deptno AS DepartmentNumber, COUNT(e) AS EmployeeCount;
-    ```
-
-26. **Вывести сотрудников, у которых есть менеджер:**  
-    ```cypher
-    MATCH (e:Employee) WHERE e.mgr IS NOT NULL RETURN e;
-    ```
-
----
-
-Готово! Вы можете скопировать эти запросы и использовать их в Neo4j. Если что-то нужно дополнить или изменить, дайте знать! 😊
