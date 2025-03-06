@@ -1,29 +1,160 @@
-```text
-# Перевод SQL запросов в MongoDB (на основе предоставленных примеров из изображения)
+db.dept.aggregate([
+    {
+        $lookup: {
+            from: "emp",
+            localField: "deptno",
+            foreignField: "deptno",
+            as: "employees"
+        }
+    },
+    {
+        $match: {dname: "ACCOUNTING"}
+    },
+    {
+        $project: {
+            deptno: 1,
+            "employees.empno": 1,
+            _id: 0
+        }
+    }
+]);
 
-Предполагается, что у нас есть коллекции "emp" (сотрудники) и "dept" (отделы) в MongoDB. Структура документов в этих коллекциях соответствует столбцам в SQL таблицах.
 
-SQL | MongoDB
-------- | --------
-select * from emp; | db.emp.find({})
-select * from dept; | db.dept.find({})
-select ename, sal from emp; | db.emp.find({}, {ename: 1, sal: 1, _id: 0})
-select ename from emp; | db.emp.find({}, {ename: 1, _id: 0})
-select * from emp where ename = 'SMITH'; | db.emp.find({ename: 'SMITH'})
-select * from emp where empno in (7369, 7566, 7782); | db.emp.find({empno: {$in: [7369, 7566, 7782]}})
-select dept.deptno, emp.empno from dept, emp where emp.deptno = dept.deptno; | db.emp.aggregate([{$lookup: {from: "dept", localField: "deptno", foreignField: "deptno", as: "dept_info"}}, {$project: { "deptno": 1, "empno": 1, "_id": 0 }} ])
-select * from dept where dname = 'ACCOUNTING'; | db.dept.find({dname: 'ACCOUNTING'})
-select * from dept join emp on dept.deptno = emp.deptno; | db.emp.aggregate([{$lookup: {from: "dept", localField: "deptno", foreignField: "deptno", as: "dept_info"}}])
-select * from dept join emp on dept.deptno = emp.deptno where dname = 'ACCOUNTING'; | db.emp.aggregate([{$lookup: {from: "dept", localField: "deptno", foreignField: "deptno", as: "dept_info"}},{$match: {"dept_info.dname": "ACCOUNTING"}}])
-Select * from emp join dept on emp.empno = 20; | db.emp.aggregate([{$lookup: {from: "dept", localField: "empno", foreignField: "empno", as: "dept_info"}},{$match: {"empno": 20}}])
-Select a.deptno, b.ename from dept a, emp b; |  db.dept.aggregate([ { $lookup: { from: "emp", localField: "deptno", foreignField: "deptno", as: "employees" } }, { $project: { deptno: 1, "employees.ename": 1, _id: 0 } } ])
-Select a.* from dept a, emp b where a.deptno = emp.deptno; | db.dept.aggregate([ { $lookup: { from: "emp", localField: "deptno", foreignField: "deptno", as: "employees" } }, { $project: { _id: 0 } } ])
-Select * from dept join emp on dept.deptno = emp.deptno where ename = 'SMITH'; | db.emp.aggregate([{$match: {ename: 'SMITH'}}, {$lookup: {from: "dept", localField: "deptno", foreignField: "deptno", as: "dept_info"}}])
-SAL > 2500 - EMP | db.emp.find({sal: {$gt: 2500}})
-ПРОЕКЦИЯ(PROJECT)(π): ENAME, DEPTNO - EMP.DEPTNO | db.emp.find({}, {ename: 1, deptno: 1, _id: 0})
-ПРОИЗВЕДЕНИЕ(PRODUCT)(*): EMP, DEPT | db.emp.aggregate([{$lookup: {from: "dept", localField: "deptno", foreignField: "deptno", as: "dept_info"}}])
-ОБЪЕДИНЕНИЕ(UNION)(U): DEPT.LOC - DEPT | MongoDB не имеет прямого аналога UNION. Можно вставить результаты одного запроса в другой, предварительно обработав данные.
-SELECT ENAME, DEPTNO from EMP UNION SELECT DNAME, DEPTNO from DEPT; | Сначала выполнить каждый запрос по отдельности, а затем объединить результаты в коде приложения. MongoDB не имеет прямого аналога оператора UNION.
+db.dept.aggregate([
+    {
+        $lookup: {
+            from: "emp",
+            localField: "deptno",
+            foreignField: "deptno",
+            as: "employees"
+        }
+    },
+    {
+        $match: {dname: "WORKS"}
+    },
+    {
+        $project: {
+            deptno: 1,
+            "employees.empno": 1,
+            _id: 0
+        }
+    }
+]);
 
-ПЕРЕСЕЧЕНИЕ(INTERSECT)(∩): DEPTNO from EMP INTERSECT DEPTNO from DEPT | MongoDB не имеет прямого аналога INTERSECT. Можно использовать $group и $match для определения пересечения значений. Для реализации понадобится более сложная агрегация.
-СОЕДИНЕНИЕ(JOIN)(П): DEPT.* from DEPT, EMP.WHERE SAL > 3000 | db.dept.aggregate([ { $lookup: { from: "emp", let: { deptno: "$deptno" }, pipeline: [ { $match: { $expr: { $and: [ { $eq: [ "$deptno", "$$deptno" ] }, { $gt: [ "$sal", 3000 ] } ] } } } ], as: "employees" } }, { $unwind: "$employees" }, { $project: { _id: 0, deptno: 1, dname: 1, loc: 1 } } ])
+
+
+db.emp.aggregate([
+    {
+        $lookup: {
+            from: "dept",
+            localField: "deptno",
+            foreignField: "deptno",
+            as: "department"
+        }
+    },
+    {
+        $unwind: "$department"
+    }
+]);
+
+
+
+db.dept.aggregate([
+    {
+        $unionWith: {
+            coll: "emp",
+            pipeline: [
+                {
+                    $project: {
+                        deptno: "$deptno",
+                        dname: "$ename",
+                        loc: "$deptno"
+                    }
+                }
+            ]
+        }
+    }
+]);
+
+
+db.emp.aggregate([
+    {
+        $group: {
+            _id: "$deptno",
+            count: {$sum: 1}
+        }
+    },
+    {
+        $match: {
+            count: {$gt: 1}
+        }
+    },
+    {
+        $project: {
+            deptno: "$_id",
+            _id: 0
+        }
+    }
+]);
+
+
+
+
+db.dept.aggregate([
+    {
+        $lookup: {
+            from: "emp",
+            let: {deptno: "$deptno"},
+            pipeline: [
+                {
+                    $match: {
+                        $expr: {
+                            $and: [
+                                {$eq: ["$deptno", "$$deptno"]},
+                                {$gt: ["$sal", 3000]}
+                            ]
+                        }
+                    }
+                }
+            ],
+            as: "employees"
+        }
+    },
+    {
+        $unwind: "$employees"
+    }
+]);
+
+
+
+db.emp.aggregate([
+    {
+        $group: {
+            _id: "$deptno",
+            avg_sal: {$avg: "$sal"}
+        }
+    }
+]);
+
+
+
+db.emp.aggregate([
+    {
+        $group: {
+            _id: "$deptno",
+            count: {$sum: 1}
+        }
+    }
+]);
+
+
+db.emp.aggregate([
+    {
+        $match: {sal: {$gt: 5000}}
+    },
+    {
+        $group: {
+            _id: "$deptno"
+        }
+    }
+]);
