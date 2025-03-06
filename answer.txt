@@ -1,10 +1,228 @@
-1.Select * from dept join emp on dept.deptno = emp.deptno where dname = ‘ACCOUNTING’;
-2.Select * from dept join emp on dept.deptno = emp.deptno where dname = ‘RESEARCH;
-3.Select * from emp join dept on emp.empno = 7369 and dept.deptno = 20; 
-4.select a.deptno, b.ename from dept a, emp b
-5.Select a, b from dept a, emp b;
-6.select a.deptno, b.ename from dept a, emp b
-7.Select * from dept join emp on dept.deptno = emp.deptno where emp.ename = ‘SMITH’;
-8.SELECT DEPTNO,DNAME, LOC from DEPT;
-9.SELECT ENAME,DEPTNO from EMP UNION SELECT  DEPTNO,DNAME, LOC from DEPT;
-10.SELECT DEPTNO from EMP UNION SELECT  DEPTNO from DEPT;
+
+db.dept.aggregate([
+    {
+        $lookup: {
+            from: "emp",
+            localField: "deptno",
+            foreignField: "deptno",
+            as: "employees"
+        }
+    },
+    {
+        $match: {dname: "ACCOUNTING"}
+    },
+    {
+        $unwind: "$employees"
+    },
+    {
+        $project: {
+            _id: 0,
+            dept: "$$ROOT",
+            employees: "$employees"
+        }
+    }
+]);
+
+
+db.dept.aggregate([
+    {
+        $lookup: {
+            from: "emp",
+            localField: "deptno",
+            foreignField: "deptno",
+            as: "employees"
+        }
+    },
+    {
+        $match: {dname: "RESEARCH"}
+    },
+    {
+        $unwind: "$employees"
+    },
+    {
+        $project: {
+            _id: 0,
+            dept: "$$ROOT",
+            employees: "$employees"
+        }
+    }
+]);
+
+
+
+db.emp.aggregate([
+    {
+        $match: {empno: 7369}
+    },
+    {
+        $lookup: {
+            from: "dept",
+            localField: "deptno",
+            foreignField: "deptno",
+            as: "department"
+        }
+    },
+    {
+        $unwind: "$department"
+    },
+    {
+        $match: {"department.deptno": 20}
+    },
+    {
+        $project: {
+            _id: 0,
+            employee: "$$ROOT",
+            department: "$department"
+        }
+    }
+]);
+
+
+
+db.dept.aggregate([
+    {
+        $lookup: {
+            from: "emp",
+            let: {deptno: "$deptno"},
+            pipeline: [
+                {
+                    $project: {
+                        ename: 1,
+                        deptno: "$$deptno"
+                    }
+                }
+            ],
+            as: "employees"
+        }
+    },
+    {
+        $unwind: "$employees"
+    },
+    {
+        $project: {
+            deptno: 1,
+            ename: "$employees.ename",
+            _id: 0
+        }
+    }
+]);
+
+
+
+
+db.dept.aggregate([
+    {
+        $lookup: {
+            from: "emp",
+            let: {deptno: "$deptno"},
+            pipeline: [
+                {
+                    $project: {
+                        ename: 1,
+                        deptno: "$$deptno"
+                    }
+                }
+            ],
+            as: "employees"
+        }
+    },
+    {
+        $unwind: "$employees"
+    },
+    {
+        $project: {
+            dept: "$$ROOT",
+            employee: "$employees",
+            _id: 0
+        }
+    }
+]);
+
+
+
+db.dept.aggregate([
+    {
+        $lookup: {
+            from: "emp",
+            localField: "deptno",
+            foreignField: "deptno",
+            as: "employees"
+        }
+    },
+    {
+        $unwind: "$employees"
+    },
+    {
+        $match: {"employees.ename": "SMITH"}
+    },
+    {
+        $project: {
+            _id: 0,
+            dept: "$$ROOT",
+            employees: "$employees"
+        }
+    }
+]);
+
+
+
+db.emp.aggregate([
+    {
+        $project: {
+            ename: 1,
+            deptno: 1,
+            _id: 0
+        }
+    },
+    {
+        $unionWith: {
+            coll: "dept",
+            pipeline: [
+                {
+                    $project: {
+                        ename: "$dname",
+                        deptno: "$deptno",
+                        loc: 1,
+                        _id: 0
+                    }
+                }
+            ]
+        }
+    }
+]);
+
+
+
+
+db.emp.aggregate([
+    {
+        $project: {
+            deptno: 1,
+            _id: 0
+        }
+    },
+    {
+        $unionWith: {
+            coll: "dept",
+            pipeline: [
+                {
+                    $project: {
+                        deptno: 1,
+                        _id: 0
+                    }
+                }
+            ]
+        }
+    },
+    {
+        $group: {
+            _id: "$deptno"
+        }
+    },
+    {
+        $project: {
+            deptno: "$_id",
+            _id: 0
+        }
+    }
+]);
