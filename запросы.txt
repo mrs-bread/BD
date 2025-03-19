@@ -1,0 +1,54 @@
+Part 1
+----------------------------------------------------------------
+select empno, sal, hiredate from emp;
+----------------------------------------------------------------
+select deptno, dname from dept;
+----------------------------------------------------------------
+select ename, round(sal*1.15) as increased_salary from emp;
+----------------------------------------------------------------
+select ename from emp
+  where to_char(hiredate,'MM')='09';
+----------------------------------------------------------------
+select deptno, dname from dept
+  order by dname asc;
+----------------------------------------------------------------
+select empno, ename,sal from emp
+  where sal between 1000 and 2000;
+----------------------------------------------------------------
+select * from emp
+  where deptno in (10,20)
+  order by ename;
+----------------------------------------------------------------
+select ename, job from emp
+  where deptno=20 and job like '%CLERK%';
+----------------------------------------------------------------
+select ename from emp
+  where ename like '%TH%' or ename like '%LL%';
+----------------------------------------------------------------
+select ename,job,sal from emp
+  where mgr is not null;
+----------------------------------------------------------------
+select ename from emp
+  where ename like '%A%A%';
+----------------------------------------------------------------
+select ename, sal*12 as annual_salary, nvl(comm,0) as commission from emp
+  where sal>nvl(comm,0)
+  order by sal desc, ename asc;
+----------------------------------------------------------------
+Part 2
+----------------------------------------------------------------
+select e.ename from emp e
+  join dept d on e.deptno = d.deptno
+  where d.loc = 'NEW YORK';
+----------------------------------------------------------------
+select e.ename from emp e
+  join emp m on e.mgr = m.mgr
+  where e.sal>m.sal;
+----------------------------------------------------------------
+select e.ename from emp e
+  where e.deptno in (select deptno from emp group by deptno having count(*)>3);
+----------------------------------------------------------------
+select e.deptno, e.ename, e.sal, sum(e.sal) over (partition by e.deptno) as department_salary,
+  sum(e.sal) over() as total_salary from emp e
+  order by e.deptno, e.ename;
+----------------------------------------------------------------
