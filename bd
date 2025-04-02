@@ -45,3 +45,96 @@ R ÷ S получается
                         ---+---
                          a | b
                          e | d
+
+
+-- Создание таблиц и вставка данных для внутреннего соединения:
+
+-- Таблица R
+CREATE TABLE R (
+    A INTEGER,
+    B INTEGER,
+    C INTEGER
+);
+
+INSERT INTO R (A, B, C) VALUES
+(1, 2, 3),
+(4, 5, 6),
+(7, 8, 9);
+
+-- Таблица S
+CREATE TABLE S (
+    C INTEGER,
+    D VARCHAR(10),
+    E VARCHAR(10)
+);
+
+INSERT INTO S (C, D, E) VALUES
+(3, 'a', 'b'),
+(6, 'c', 'd');
+
+-- Проверка созданных таблиц
+SELECT * FROM R;
+SELECT * FROM S;
+
+-- Внутреннее соединение:
+SELECT R.A, R.B, R.C, S.D, S.E
+FROM R
+INNER JOIN S ON R.C = S.C;
+
+-- Создание таблиц и вставка данных для деления:
+
+-- Таблица R для деления
+CREATE TABLE R_divide (
+    A VARCHAR(10),
+    B VARCHAR(10),
+    C VARCHAR(10),
+    D VARCHAR(10)
+);
+
+INSERT INTO R_divide (A, B, C, D) VALUES
+('a', 'b', 'c', 'd'),
+('a', 'b', 'e', 'f'),
+('b', 'c', 'e', 'f'),
+('e', 'd', 'c', 'd'),
+('e', 'd', 'e', 'f'),
+('a', 'b', 'd', 'e');
+
+-- Таблица S для деления
+CREATE TABLE S_divide (
+    C VARCHAR(10),
+    D VARCHAR(10)
+);
+
+INSERT INTO S_divide (C, D) VALUES
+('c', 'd'),
+('e', 'f');
+
+-- Проверка созданных таблиц
+SELECT * FROM R_divide;
+SELECT * FROM S_divide;
+
+-- Деление (вариант 1: с использованием NOT EXISTS):
+SELECT DISTINCT R.A, R.B
+FROM R_divide R
+WHERE NOT EXISTS (
+    SELECT *
+    FROM S_divide S
+    WHERE NOT EXISTS (
+        SELECT *
+        FROM R_divide R2
+        WHERE R2.A = R.A AND R2.B = R.B AND R2.C = S.C AND R2.D = S.D
+    )
+);
+
+-- Деление (вариант 2: с использованием агрегации и HAVING):
+SELECT A, B
+FROM R_divide
+GROUP BY A, B
+HAVING COUNT(*) = (SELECT COUNT(*) FROM S_divide)
+   AND EVERY(EXISTS (SELECT 1 FROM S_divide WHERE R_divide.C = S_divide.C AND R_divide.D = S_divide.D));
+
+-- Очистка (удаление таблиц)
+DROP TABLE IF EXISTS R;
+DROP TABLE IF EXISTS S;
+DROP TABLE IF EXISTS R_divide;
+DROP TABLE IF EXISTS S_divide;
