@@ -288,3 +288,116 @@ JOIN countries USING (country_id);
 18.Отображение названия должности, идентификатора сотрудника, количества дней между датой окончания и датой начала для всех должностей в отделе 30 из истории должностей.
 19.Отображение названия отдела и имени менеджера
 20.Отображение названия отдела, имени менеджера и города.
+
+
+
+1.
+SELECT COUNT(*) 
+FROM employees 
+WHERE EXTRACT(DAY FROM hire_date) > 15;
+2.
+SELECT c.country_id, COUNT(DISTINCT l.city) 
+FROM countries c 
+LEFT JOIN locations l USING(country_id)
+GROUP BY c.country_id;
+3.
+SELECT department_id, AVG(salary) 
+FROM employees 
+WHERE commission_pct IS NOT NULL 
+GROUP BY department_id;
+4.
+SELECT job_id, 
+       COUNT(*) AS emp_count,
+       SUM(salary) AS total_salary,
+       MAX(salary) - MIN(salary) AS salary_diff
+FROM employees 
+GROUP BY job_id;
+5.
+SELECT job_id 
+FROM employees 
+GROUP BY job_id 
+HAVING AVG(salary) > 10000;
+6.
+SELECT EXTRACT(YEAR FROM hire_date) AS year 
+FROM employees 
+GROUP BY year 
+HAVING COUNT(*) > 10;
+7.
+SELECT department_id 
+FROM employees 
+WHERE commission_pct IS NOT NULL 
+GROUP BY department_id 
+HAVING COUNT(*) > 5;
+8.
+SELECT employee_id 
+FROM job_history 
+GROUP BY employee_id 
+HAVING COUNT(*) > 1;
+9.
+SELECT job_id 
+FROM job_history 
+WHERE (end_date - start_date) > 100 
+GROUP BY job_id 
+HAVING COUNT(DISTINCT employee_id) > 3;
+10.
+SELECT department_id,
+       EXTRACT(YEAR FROM hire_date) AS year,
+       COUNT(*) 
+FROM employees 
+GROUP BY department_id, year;
+11.
+SELECT d.department_id 
+FROM departments d 
+WHERE d.manager_id IN (
+    SELECT manager_id 
+    FROM employees 
+    GROUP BY manager_id 
+    HAVING COUNT(*) > 5
+);
+12.
+UPDATE employees 
+SET salary = 8000 
+WHERE employee_id = 115 
+AND salary < 6000;
+13.
+INSERT INTO employees 
+(employee_id, first_name, last_name, email, hire_date, job_id)
+VALUES 
+(1001, 'John', 'Doe', 'jdoe@mail.com', CURRENT_TIMESTAMP, 'IT_PROG');
+14.
+DELETE FROM departments 
+WHERE department_id = 20;
+15.
+UPDATE employees 
+SET job_id = 'IT_PROG' 
+WHERE employee_id = 110 
+AND department_id = 10 
+AND job_id NOT LIKE 'IT%';
+16.
+INSERT INTO departments 
+(department_id, department_name) 
+VALUES (150, 'New Department');
+17.
+SELECT d.department_name, COUNT(e.employee_id) 
+FROM departments d 
+LEFT JOIN employees e USING(department_id)
+GROUP BY d.department_name;
+18.
+SELECT j.job_title, 
+       jh.employee_id, 
+       (jh.end_date - jh.start_date) AS days
+FROM job_history jh
+JOIN jobs j USING(job_id)
+WHERE jh.department_id = 30;
+19.
+SELECT d.department_name, 
+       e.first_name || ' ' || e.last_name AS manager_name
+FROM departments d 
+LEFT JOIN employees e ON d.manager_id = e.employee_id;
+20.
+SELECT d.department_name, 
+       e.first_name || ' ' || e.last_name AS manager_name,
+       l.city
+FROM departments d 
+JOIN employees e ON d.manager_id = e.employee_id
+JOIN locations l USING(location_id);
