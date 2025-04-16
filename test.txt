@@ -76,3 +76,71 @@ CREATE TABLE job_history
 8.	Создайте запрос для вывода фамилии, должности, названия отдела, оклада  всех служащих.
 9.	Создайте запрос для вывода фамилий и дат найма всех служащих, нанятых после Davies. (запрос выполнить используя декартово произведение, с использованием данной фамилии).
 10.	По всем служащим, нанятым раньше своих менеджеров, выведите фамилии и даты найма самих служащих, а также фамилии и даты найма их менеджеров.
+
+SELECT DISTINCT j.job_title, l.city, l.state_province
+FROM employees e
+JOIN jobs j ON e.job_id = j.job_id
+JOIN departments d ON e.department_id = d.department_id
+JOIN locations l ON d.location_id = l.location_id
+WHERE e.department_id = 80;
+
+
+SELECT e.last_name, d.department_name, l.city, l.state_province
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+JOIN locations l ON d.location_id = l.location_id
+WHERE e.commission_pct IS NOT NULL;
+
+
+SELECT e.last_name, d.department_name
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+WHERE e.last_name LIKE '%a%';
+
+
+SELECT e.last_name, j.job_title, e.department_id, d.department_name
+FROM employees e
+JOIN jobs j ON e.job_id = j.job_id
+JOIN departments d ON e.department_id = d.department_id
+JOIN locations l ON d.location_id = l.location_id
+WHERE l.city = 'Toronto';
+
+
+SELECT e.last_name AS "Employee", e.employee_id AS "Emp#", 
+       m.last_name AS "Manager", m.employee_id AS "MGR#"
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.employee_id;
+
+
+SELECT e.last_name AS "Employee", e.employee_id AS "Emp#", 
+       m.last_name AS "Manager", m.employee_id AS "MGR#"
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.employee_id
+ORDER BY e.employee_id;
+
+
+SELECT e.department_id AS "Department", e.last_name AS "Employee",
+       c.last_name AS "Colleague"
+FROM employees e
+JOIN employees c ON e.department_id = c.department_id
+WHERE e.employee_id != c.employee_id
+ORDER BY e.department_id, e.last_name, c.last_name;
+
+
+SELECT e.last_name, j.job_title, d.department_name, e.salary
+FROM employees e
+JOIN jobs j ON e.job_id = j.job_id
+JOIN departments d ON e.department_id = d.department_id;
+
+
+SELECT e.last_name, e.hire_date
+FROM employees e, employees d
+WHERE d.last_name = 'Davies' 
+AND e.hire_date > d.hire_date;
+
+
+SELECT e.last_name AS "Employee", e.hire_date AS "Emp Hire Date",
+       m.last_name AS "Manager", m.hire_date AS "Mgr Hire Date"
+FROM employees e
+JOIN employees m ON e.manager_id = m.employee_id
+WHERE e.hire_date < m.hire_date;
