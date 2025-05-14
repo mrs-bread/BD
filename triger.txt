@@ -43,3 +43,107 @@ begin
    insert into  job_history values (:old.employee_id, v_startdate, sysdate, :old.job_id, :old.department_id);
 end;
 
+
+-- 1) Запрет изменений в таблице EMPLOYEES до 6:00 и после 22:00
+
+-- Функция‑триггер
+CREATE OR REPLACE FUNCTION employees_time_check()
+  RETURNS trigger
+  LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- проверяем текущий час
+  IF EXTRACT(HOUR FROM CURRENT_TIME) < 6
+     OR EXTRACT(HOUR FROM CURRENT_TIME) > 22 THEN
+    RAISE EXCEPTION 'Sorry! No change can be made before 6 AM and after 10 PM';
+  END IF;
+
+  -- для DELETE возвращаем старую строку, для INSERT/UPDATE — новую
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  ELSE
+    RETURN NEW;
+  END IF;
+END;
+$$;
+
+-- Собственно триггер
+DROP TRIGGER IF EXISTS trg_employees_time_check ON employees;
+CREATE TRIGGER trg_employees_time_check
+  BEFORE INSERT OR UPDATE OR DELETE
+  ON employees
+  FOR EACH ROW
+  EXECUTE FUNCTION employees_time_check();
+
+
+-- 2) Запрет уменьшения зарплаты
+
+-- Функция‑триггер
+CREATE OR REPLACE FUNCTION employees_salary_check()
+  RETURNS trigger
+  LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF OLD.salary > NEW.salary THEN
+    RAISE EXCEPTION 'Sorry! Salary cannot be decreased!';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+-- Триггер
+DROP TRIGGER IF EXISTS trg_employees_salary_check ON employees;
+CREATE TRIGGER trg_employees_salary_check
+  BEFORE UPDATE ON employees
+  FOR EACH ROW
+  EXECUTE FUNCTION employees_salary_check();
+
+
+-- 3) Логирование смены должности в job_history
+
+-- Функция‑триггер
+CREATE OR REPLACE FUNCTION log_job_change()
+  RETURNS trigger
+  LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_enddate   DATE;
+  v_startdate DATE;
+BEGIN
+  -- берём последнюю дату окончания в истории
+  SELECT MAX(end_date)
+    INTO v_enddate
+    FROM job_history
+   WHERE employee_id = OLD.employee_id;
+
+  IF v_enddate IS NULL THEN
+    v_startdate := OLD.hire_date;
+  ELSE
+    v_startdate := v_enddate + INTERVAL '1 day';
+  END IF;
+
+  INSERT INTO job_history(
+    employee_id,
+    start_date,
+    end_date,
+    job_id,
+    department_id
+  ) VALUES (
+    OLD.employee_id,
+    v_startdate,
+    CURRENT_DATE,
+    OLD.job_id,
+    OLD.department_id
+  );
+
+  RETURN NEW;
+END;
+$$;
+
+-- Триггер
+DROP TRIGGER IF EXISTS trg_log_job_change ON employees;
+CREATE TRIGGER trg_log_job_change
+  AFTER UPDATE OF job_id ON employees
+  FOR EACH ROW
+  EXECUTE FUNCTION log_job_change();
+
