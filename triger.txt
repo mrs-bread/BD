@@ -1,0 +1,45 @@
+Я предоставлю тебе тригеры написанные для ORACLE, тебе нужно будет их переписать на PostGree и написать как их запустить:
+Первый триггер: Убедитесь, что в таблицу EMPLOYEES нельзя вносить изменения до 6 часов утра и после 10 часов вечера в течение дня.
+create or replace trigger  trg_employees_time_check
+before update or insert or delete
+on employees
+for each row
+begin
+   if  to_char(sysdate,'hh24') < 6 or to_char(sysdate,'hh24') > 10 then
+         raise_application_error(-20111,'Sorry! No change can be made before 6 AM and after 10 PM');
+   end if;
+end;
+Второй триггер: Создайте триггер, чтобы заработная плата работника не уменьшалась.
+create or replace trigger  trg_employees_salary_check
+before update
+on employees
+for each row
+begin
+   if  :old.salary > :new.salary then
+         raise_application_error(-20111,'Sorry! Salary can not be decreased!');
+   end if;
+end;
+Третий триггерр: Создайте триггер, чтобы сотрудник и менеджер принадлежали к одному отделу.
+Примечание: этот триггер должен прочитать строку, которая изменяется, что вызывает проблему с мутацией. 
+ create or replace trigger trg_log_job_change
+after update of job_id
+on employees
+for each row
+declare
+    v_enddate   date;
+    v_startdate date;
+begin
+   -- find out whether the employee has any row in job_history table
+   select max(end_date) into v_enddate
+   from job_history
+   where employee_id = :old.employee_id;
+
+   if v_enddate is null then
+      v_startdate := :old.hire_date;
+   else
+      v_startdate := v_enddate + 1;
+   end if;
+
+   insert into  job_history values (:old.employee_id, v_startdate, sysdate, :old.job_id, :old.department_id);
+end;
+
