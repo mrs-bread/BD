@@ -77,3 +77,129 @@ begin
      -- remove extra  , at the beginning
      return  ltrim(v_employees,',');
 end;
+
+
+
+1.
+CREATE OR REPLACE FUNCTION get_employees_range()
+RETURNS TABLE(position INT, employee_id INT, first_name TEXT)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    cnt INT := 0;
+    rec RECORD;
+BEGIN
+    FOR rec IN
+        SELECT employee_id, first_name
+        FROM employees
+        ORDER BY employee_id
+    LOOP
+        cnt := cnt + 1;
+        IF cnt BETWEEN 5 AND 10 THEN
+            position := cnt;
+            employee_id := rec.employee_id;
+            first_name := rec.first_name;
+            RETURN NEXT;
+        ELSIF cnt > 10 THEN
+            EXIT;
+        END IF;
+    END LOOP;
+END;
+$$;
+
+
+SELECT * FROM get_employees_range();
+
+
+2. 
+CREATE OR REPLACE FUNCTION first_hire_by_job()
+RETURNS TABLE(job_id TEXT, job_title TEXT, first_name TEXT)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT j.job_id,
+           j.job_title,
+           e.first_name
+    FROM jobs j
+    JOIN LATERAL (
+        SELECT first_name
+        FROM employees e
+        WHERE e.job_id = j.job_id
+        ORDER BY hire_date
+        LIMIT 1
+    ) AS e ON TRUE
+    ORDER BY j.job_id;
+END;
+$$;
+
+
+SELECT * FROM first_hire_by_job();
+
+
+3.
+CREATE OR REPLACE FUNCTION apply_salary_hikes()
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    emp_rec RECORD;
+    v_hike NUMERIC;
+    updated_count INT := 0;
+BEGIN
+    FOR emp_rec IN
+        SELECT employee_id, department_id, commission_pct
+        FROM employees
+    LOOP
+        IF emp_rec.department_id = 40 THEN
+            v_hike := 0.10;
+        ELSIF emp_rec.department_id = 70 THEN
+            v_hike := 0.15;
+        ELSIF emp_rec.commission_pct > 0.30 THEN
+            v_hike := 0.05;
+        ELSE
+            v_hike := 0.10;
+        END IF;
+
+        UPDATE employees
+        SET salary = salary * (1 + v_hike)
+        WHERE employee_id = emp_rec.employee_id;
+
+        GET DIAGNOSTICS updated_count = updated_count + ROW_COUNT;
+    END LOOP;
+
+    RETURN updated_count;
+END;
+$$;
+
+
+-- Сколько сотрудников получили повышение?
+SELECT apply_salary_hikes();
+-- Проверить изменения:
+SELECT employee_id, salary
+FROM employees
+WHERE department_id IN (40,70) OR commission_pct > 0.30
+ORDER BY employee_id
+LIMIT 10;
+
+
+4.
+CREATE OR REPLACE FUNCTION get_employees_for_manager(p_manager INT)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_employees TEXT;
+BEGIN
+    SELECT COALESCE(string_agg(first_name, ','), '')
+    INTO   v_employees
+    FROM   employees
+    WHERE  manager_id = p_manager;
+
+    RETURN v_employees;
+END;
+$$;
+
+
+SELECT get_employees_for_manager(108);
+
