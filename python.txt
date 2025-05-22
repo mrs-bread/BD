@@ -2,7 +2,7 @@
 Присоединение к базе данных: 
 import psycopg2
 
-conn = psycopg2.connect(database = "testdb", user = "postgres", password = "postpass", host = "127.0.0.1", port = "5432")
+conn = psycopg2.connect(database = "HRRRRR", user = "postgres", password = "postpass", host = "127.0.0.1", port = "5432")
 print ("Opened database successfully")
 
 Задание:
