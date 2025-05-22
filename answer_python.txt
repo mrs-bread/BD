@@ -1,0 +1,164 @@
+1.Отобразить с 5-го по 10-го сотрудников из таблицы «Сотрудники»
+SELECT employee_id, first_name
+FROM employees
+ORDER BY employee_id
+OFFSET 4      -- пропустить первых 4 записи
+LIMIT 6;      -- показать следующие 6 (5–10)
+
+---
+import psycopg2
+
+conn = psycopg2.connect(
+    database="HRRRRR",
+    user="postgres",
+    password="postpass",
+    host="127.0.0.1",
+    port="5432"
+)
+cur = conn.cursor()
+
+# Выполним SQL с LIMIT/OFFSET:
+cur.execute("""
+    SELECT employee_id, first_name
+    FROM employees
+    ORDER BY employee_id
+    OFFSET %s
+    LIMIT %s
+""", (4, 6))
+
+rows = cur.fetchall()
+print("Сотрудники с 5-го по 10-го:")
+for emp_id, first_name in rows:
+    print(f"{emp_id}: {first_name}")
+
+cur.close()
+conn.close()
+
+
+2. Показать должность и имя сотрудника, который работает самый первый день (для каждой должности)
+SELECT
+    j.job_title,
+    (
+        SELECT e.first_name
+        FROM employees e
+        WHERE e.job_id = j.job_id
+        ORDER BY e.hire_date
+        LIMIT 1
+    ) AS first_employee
+FROM jobs j
+ORDER BY j.job_id;
+
+
+-----
+
+import psycopg2
+
+conn = psycopg2.connect(
+    database="HRRRRR",
+    user="postgres",
+    password="postpass",
+    host="127.0.0.1",
+    port="5432"
+)
+cur = conn.cursor()
+
+cur.execute("""
+    SELECT
+        j.job_title,
+        (
+            SELECT e.first_name
+            FROM employees e
+            WHERE e.job_id = j.job_id
+            ORDER BY e.hire_date
+            LIMIT 1
+        ) AS first_employee
+    FROM jobs j
+    ORDER BY j.job_id;
+""")
+
+rows = cur.fetchall()
+print("Должность – имя первого по дате приема сотрудника:")
+for job_title, first_emp in rows:
+    if first_emp is None:
+        print(f"{job_title} – (нет сотрудников)")
+    else:
+        print(f"{job_title} – {first_emp}")
+
+cur.close()
+conn.close()
+
+
+3.Обновление зарплаты сотрудника в зависимости от отдела и процента комиссии
+UPDATE employees
+SET salary = salary * (
+    CASE
+        WHEN department_id = 40 THEN 1.10   -- +10%
+        WHEN department_id = 70 THEN 1.15   -- +15%
+        WHEN commission_pct > 0.30 THEN 1.05 -- +5%
+        ELSE 1.10                           -- +10%
+    END
+)
+WHERE TRUE;  -- условие WHERE TRUE означает «для всех строк»; при необходимости можно сузить диапазон
+
+
+-------
+import psycopg2
+
+conn = psycopg2.connect(
+    database="HRRRRR",
+    user="postgres",
+    password="postpass",
+    host="127.0.0.1",
+    port="5432"
+)
+cur = conn.cursor()
+
+# Обновляем всех сотрудников одним запросом:
+cur.execute("""
+    UPDATE employees
+    SET salary = salary * (
+        CASE
+            WHEN department_id = 40 THEN 1.10
+            WHEN department_id = 70 THEN 1.15
+            WHEN commission_pct IS NOT NULL AND commission_pct > 0.30 THEN 1.05
+            ELSE 1.10
+        END
+    )
+""")
+conn.commit()
+print(f"Обновлено строк: {cur.rowcount}")
+
+cur.close()
+conn.close()
+
+
+4. Создать функцию, которая принимает идентификатор менеджера и возвращает имена сотрудников, которые отчитываются перед этим менеджером, через запятую
+CREATE OR REPLACE FUNCTION get_employees_for_manager(p_manager_id INTEGER)
+RETURNS TEXT
+LANGUAGE sql AS
+$$
+    SELECT COALESCE(string_agg(first_name, ','), '') 
+    FROM employees
+    WHERE manager_id = p_manager_id;
+$$;
+
+------
+import psycopg2
+
+conn = psycopg2.connect(
+    database="HRRRRR",
+    user="postgres",
+    password="postpass",
+    host="127.0.0.1",
+    port="5432"
+)
+cur = conn.cursor()
+
+manager_id = 102  # пример
+cur.execute("SELECT get_employees_for_manager(%s);", (manager_id,))
+result = cur.fetchone()[0]  # строка «имена через запятую» или '' если нет
+print(f"Сотрудники, подотчётные менеджеру {manager_id}: {result}")
+
+cur.close()
+conn.close()
+
